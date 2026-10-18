@@ -1,0 +1,39 @@
+# Railway.toml - Railway Platform Configuration
+# Place this file in the root of your repository
+# Documentation: https://docs.railway.app/deploy/config-as-code
+
+[build]
+builder = "NIXPACKS"
+
+# Only watch these paths for changes - ignores , knowledge/, etc.
+# This prevents unnecessary deployments when you update documentation
+watchPaths = [
+  "backend/**",
+  "frontend/src/**",
+  "frontend/public/**",
+  "data/**",
+  "backend/requirements.txt",
+  "frontend/package.json",
+  "frontend/package-lock.json",
+  "railway.toml",
+  "Procfile",
+  "nixpacks.toml"
+]
+
+
+[deploy]
+# Startup: migrations → production data seeding (if empty/mismatched) → brightway init → server
+# Uses seed_production_if_empty.py which loads EPA/DEFRA data with mismatch detection
+# Alembic uses -c flag to specify config file location in backend/
+startCommand = "sh -c 'PYTHONPATH=/app /usr/bin/python3 -m alembic -c backend/alembic.ini upgrade head && PYTHONPATH=/app /usr/bin/python3 backend/scripts/seed_production_if_empty.py && PYTHONPATH=/app /usr/bin/python3 backend/scripts/init_brightway.py && PYTHONPATH=/app /usr/bin/python3 -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT'"
+
+# Health check configuration
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+
+# Restart policy
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Number of replicas (1 for MVP, scale up later)
+numReplicas = 1
